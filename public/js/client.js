@@ -80,9 +80,9 @@ export const clientRefresh = async () => {
 
 const serverRefresh = async () => {
   // Tell my server to fetch new transactions
-  /*
+
   await callMyServer("/server/transactions/sync", true);
-  */
+
 };
 
 const generateWebhook = async () => {

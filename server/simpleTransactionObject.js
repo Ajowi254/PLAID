@@ -35,6 +35,18 @@ class SimpleTransaction {
    * @returns SimpleTransaction
    */
   static fromPlaidTransaction(txnObj, userId) {
+    return new SimpleTransaction(
+      txnObj.transaction_id,
+      userId,
+      txnObj.account_id,
+      txnObj.personal_finance_category.primary,
+      txnObj.date,
+      txnObj.authorized_date,
+      txnObj.merchant_name ?? txnObj.name,
+      txnObj.amount,
+      txnObj.iso_currency_code,
+      txnObj.pending_transaction_id
+    )
     // TODO: Fill this out
   }
 }

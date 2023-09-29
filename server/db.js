@@ -196,7 +196,6 @@ const getItemInfoForUser = async function (itemId, userId) {
  * @param {SimpleTransaction} transactionObj
  */
 const addNewTransaction = async function (transactionObj) {
-  /*
   try {
     console.log(`Getting ready to insert ${JSON.stringify(transactionObj)}`);
     const result = await db.run(
@@ -231,7 +230,7 @@ const addNewTransaction = async function (transactionObj) {
     }
   }
 
-  */
+
 };
 
 /**
@@ -241,7 +240,7 @@ const addNewTransaction = async function (transactionObj) {
  * @param {SimpleTransaction} transactionObj
  */
 const modifyExistingTransaction = async function (transactionObj) {
-  /*
+
   try {
     const result = await db.run(
       `UPDATE transactions 
@@ -264,7 +263,7 @@ const modifyExistingTransaction = async function (transactionObj) {
       `Looks like I'm encountering an error. ${JSON.stringify(error)}`
     );
   }
-  */
+
 };
 
 /**
