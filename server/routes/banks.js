@@ -17,6 +17,13 @@ router.get("/list", async (req, res, next) => {
 
 router.post("/deactivate", async (req, res, next) => {
   try {
+    const itemId = req.body.itemId;
+    const userId = getLoggedInUserId(req);
+    const {access_token: accessToken} = await db.getItemInfoForUser(itemId, userId)
+    await plaidClient.itemRemove({
+      access_token: accessToken
+    });
+    await db.deactivateItem(itemId);
     res.json({ todo: "Implement this method" });
   } catch (error) {
     next(error);

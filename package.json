@@ -21,6 +21,7 @@
     "moment": "^2.29.4",
     "nodemon": "^2.0.20",
     "plaid": "^12.3.0",
+    "react-router-dom": "^6.16.0",
     "sqlite": "^4.1.2",
     "sqlite3": "^5.1.6",
     "uuid": "^9.0.0"

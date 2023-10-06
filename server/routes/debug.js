@@ -29,7 +29,16 @@ router.post("/run", async (req, res, next) => {
  */
 router.post("/generate_webhook", async (req, res, next) => {
   try {
-    res.json({ todo: "Implement this method" });
+    const userId = getLoggedInUserId(req)
+    const itemsAndTokens = await db.getItemsAndAccessTokensForUser(userId)
+    const randomItem = itemsAndTokens[Math.floor(Math.random() * itemsAndTokens.length)];
+    const accessToken = randomItem.accessToken;
+    const results = await plaidClient.sandboxItemFireWebhook({
+      webhook_code:
+      SandboxItemFireWebhookRequestWebhookCodeEnum.SyncUpdatesAvailable,
+      access_token: accessToken,
+    })
+    res.json(results.data);
   } catch (error) {
     next(error);
   }

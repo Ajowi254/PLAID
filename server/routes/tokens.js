@@ -48,6 +48,9 @@ router.post("/exchange_public_token", async (req, res, next) => {
     await db.addItem(tokenData.item_id, userId, tokenData.access_token);
     await populateBankName(tokenData.item_id, tokenData.access_token);
     await populateAccountNames(tokenData.access_token);
+//call sync right away to "activate" the sync webhooks
+await syncTransactions(tokenData.item_id);
+
 
     /* Placeholder code to show that something works! */
     //const identityResult = await plaidClient.identityGet({

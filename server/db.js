@@ -72,13 +72,14 @@ const debugExposeDb = function () {
 };
 
 const getItemIdsForUser = async function (userId) {
-  const items = await db.all(`SELECT id FROM items WHERE user_id=?`, userId);
+  const items = await db.all(`SELECT id FROM items WHERE user_id=? AND is_active = 1`,
+   userId);
   return items;
 };
 
 const getItemsAndAccessTokensForUser = async function (userId) {
   const items = await db.all(
-    `SELECT id, access_token FROM items WHERE user_id=?`,
+    `SELECT id, access_token FROM items WHERE user_id=? AND is_active = 1`,
     userId
   );
   return items;
@@ -110,13 +111,17 @@ const confirmItemBelongsToUser = async function (possibleItemId, userId) {
 };
 
 const deactivateItem = async function (itemId) {
-  /*
+  
     const updateResult = await db.run(
     `UPDATE items SET access_token = 'REVOKED', is_active = 0 WHERE id = ?`,
     itemId
   );
+  //if you wanted to full delete this bank,you could...
+  // delete transactions for accounts belonging to this item
+  //delete accounts that belong to this item
+  // delete the item itself from the database
   return updateResult;
-  */
+
 };
 
 const addUser = async function (userId, username) {
@@ -317,7 +322,7 @@ const deleteExistingTransaction = async function (transactionId) {
  * @param {number} maxNum
  */
 const getTransactionsForUser = async function (userId, maxNum) {
-  /*
+  
   const results = await db.all(
     `SELECT transactions.*,
       accounts.name as account_name,
@@ -333,7 +338,7 @@ const getTransactionsForUser = async function (userId, maxNum) {
     maxNum
   );
   return results;
-  */
+  
 };
 
 /**

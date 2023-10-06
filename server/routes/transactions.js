@@ -4,9 +4,10 @@ const db = require("../db");
 const { plaidClient } = require("../plaid");
 const { setTimeout } = require("timers/promises");
 const { SimpleTransaction } = require("../simpleTransactionObject");
-const { Console } = require("console");
+const { Console, error } = require("console");
 const { all } = require("./users");
 const { Await } = require("react-router-dom");
+const { promiseHooks } = require("v8");
 
 const router = express.Router();
 
@@ -20,70 +21,60 @@ router.post("/sync", async (req, res, next) => {
   try {
    const userId = getLoggedInUserId(req);
    const items = await db.getItemIdsForUser(userId);
-   items.forEach((item) => {
- syncTransactions(item.id);
-   })
+   const fullResults = await Promise.all(
+    items.map(async(item) => {
+      return await syncTransactions(item.id);
+    })
+  );
+res.json({ completeResults: fullResults});
   } catch (error) {
     console.log(`Running into an error!`);
     next(error);
   }
 });
 
-const fetchNewSyncData = async function (accessToken, initialCursor){
+const fetchNewSyncData = async function (accessToken, initialCursor, retriesLeft = 3){
   let keepGoing = false;
-  const allData = { added:  [], modified: [], removed: [], nextCursor: initialCursor,
+  const allData = { added:  [],
+     modified: [],
+      removed: [],
+      nextCursor: initialCursor,
 };
-do {
-  const results = await plaidClient.transactionsSync({
+if (retriesLeft <= 0)
+console.error('Too many retries!')
+return allData;
+
+try {
+  do {
+   const results = await plaidClient.transactionsSync({
     access_token: accessToken,
     cursor: allData.nextCursor,
     options: {
     include_personal_finance_category: true,
-  },
+   },
   });
-const newData = results.data;
-allData.added = allData.added.concat(newData.added);
-allData.modified = allData.modified.concat(newData.modified);
-allData.removed = allData.removed.concat(newData.removed);
+  const newData = results.data;
+  allData.added = allData.added.concat(newData.added);
+  allData.modified = allData.modified.concat(newData.modified);
+   allData.removed = allData.removed.concat(newData.removed);
 allData.nextCursor = newData.next_cursor;
 keepGoing = newData.has_more;
 console.log(`Added: ${newData.added.length} Modified: ${newData.modified.length} Removed: ${newData.removed.length}`);
 
 
 } while (keepGoing === true);
-
-allData.modified.push({
-  account_id: "USE_AN_EXISTING_ACCOUNT_ID",
-  account_owner: null,
-  amount: 6.33,
-  authorized_date: "2021-03-23",
-  authorized_datetime: null,
-  category: ["Travel", "Taxi"],
-  category_id: "22016000",
-  check_number: null,
-  date: "2021-03-24",
-  datetime: null,
-  iso_currency_code: "USD",
-  merchant_name: "Uber",
-  name: "Uber 072515 SF**POOL**",
-  payment_channel: "online",
-  pending: false,
-  pending_transaction_id: null,
-  personal_finance_category: {
-    detailed: "TRANSPORTATION_TAXIS_AND_RIDE_SHARES",
-    primary: "TRANSPORTATION",
-  },
-  transaction_code: null,
-  transaction_id: "USE_AN_EXISTING_TRANSACTION_ID",
-  transaction_type: "special",
-  unofficial_currency_code: null,
+allData.removed.push({
+ transaction_id: "",
 });
-
-
 
 console.log(`All done!`);
 console.log(`Your final cursor: ${allData.nextCursor}`);
 return allData;
+} catch (error){
+  //In theory we could look at error.response?.data?.error_code
+  await setTimeout(1000);
+  return fetchNewSyncData(accessToken, initialCursor, retriesLeft -1)
+}
 };
 
 /**
@@ -129,8 +120,17 @@ const syncTransactions = async function (itemId) {
     );
 
   //5. Do something with removed transactions
-
+  await Promise.all(allData.removed.map(async (txnMini) => {
+  //const result = await db.deleteExistingTransaction(txnMini.transaction_id)
+  const result = await db.markTransactionAsRemoved(txnMini.transaction_id)
+  if (result) {
+    summary.modified += result.changes;
+   }
+    })
+    );
+  
   //6. Save our most recent cursor
+await db.saveCursorForItem(allData.nextCursor, itemId)
 
   return summary;
   
@@ -146,7 +146,10 @@ const syncTransactions = async function (itemId) {
  */
 router.get("/list", async (req, res, next) => {
   try {
-    res.json({ todo: "Implement this method" });
+    const userId = getLoggedInUserId(req);
+    const maxCount = req.params.maxCount ?? 50;
+    const transactions = await(db.getTransactionsForUser(userId, maxCount))
+    res.json(transactions);
   } catch (error) {
     console.log(`Running into an error!`);
     next(error);
